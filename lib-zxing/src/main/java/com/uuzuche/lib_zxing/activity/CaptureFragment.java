@@ -33,6 +33,18 @@ import java.util.Vector;
  */
 public class CaptureFragment extends Fragment implements SurfaceHolder.Callback {
 
+    private static final float BEEP_VOLUME = 0.10f;
+    private static final long VIBRATE_DURATION = 200L;
+    /**
+     * When the beep has finished playing, rewind to queue up another one.
+     */
+    private final MediaPlayer.OnCompletionListener beepListener = new MediaPlayer.OnCompletionListener() {
+        public void onCompletion(MediaPlayer mediaPlayer) {
+            mediaPlayer.seekTo(0);
+        }
+    };
+    @Nullable
+    CameraInitCallBack callBack;
     private CaptureActivityHandler handler;
     private ViewfinderView viewfinderView;
     private boolean hasSurface;
@@ -41,7 +53,6 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
     private InactivityTimer inactivityTimer;
     private MediaPlayer mediaPlayer;
     private boolean playBeep;
-    private static final float BEEP_VOLUME = 0.10f;
     private boolean vibrate;
     private SurfaceView surfaceView;
     private SurfaceHolder surfaceHolder;
@@ -117,8 +128,7 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        analyzeCallback = null;
-        if (mediaPlayer != null){
+        if (mediaPlayer != null) {
             mediaPlayer.setOnCompletionListener(null);
         }
 
@@ -130,6 +140,47 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
         inactivityTimer.shutdown();
     }
 
+    private void initCamera(SurfaceHolder surfaceHolder) {
+        try {
+            CameraManager.get().openDriver(surfaceHolder);
+            camera = CameraManager.get().getCamera();
+        } catch (Exception e) {
+            if (callBack != null) {
+                callBack.callBack(e);
+            }
+            return;
+        }
+        if (callBack != null) {
+            callBack.callBack(null);
+        }
+        if (handler == null) {
+            handler = new CaptureActivityHandler(this, decodeFormats, characterSet, viewfinderView);
+        }
+    }
+
+    private void initBeepSound() {
+        if (playBeep && mediaPlayer == null) {
+            // The volume on STREAM_SYSTEM is not adjustable, and users found it
+            // too loud,
+            // so we now play on the music stream.
+            getActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mediaPlayer.setOnCompletionListener(beepListener);
+
+            AssetFileDescriptor file = getResources().openRawResourceFd(
+                    R.raw.beep);
+            try {
+                mediaPlayer.setDataSource(file.getFileDescriptor(),
+                        file.getStartOffset(), file.getLength());
+                file.close();
+                mediaPlayer.setVolume(BEEP_VOLUME, BEEP_VOLUME);
+                mediaPlayer.prepare();
+            } catch (IOException e) {
+                mediaPlayer = null;
+            }
+        }
+    }
 
     /**
      * Handler scan result
@@ -152,28 +203,14 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
         }
     }
 
-    private void initCamera(SurfaceHolder surfaceHolder) {
-        try {
-            CameraManager.get().openDriver(surfaceHolder);
-            camera = CameraManager.get().getCamera();
-        } catch (Exception e) {
-            if (callBack != null) {
-                callBack.callBack(e);
-            }
-            return;
+    private void playBeepSoundAndVibrate() {
+        if (playBeep && mediaPlayer != null) {
+            mediaPlayer.start();
         }
-        if (callBack != null) {
-            callBack.callBack(null);
+        if (vibrate) {
+            Vibrator vibrator = (Vibrator) getActivity().getSystemService(getActivity().VIBRATOR_SERVICE);
+            vibrator.vibrate(VIBRATE_DURATION);
         }
-        if (handler == null) {
-            handler = new CaptureActivityHandler(this, decodeFormats, characterSet, viewfinderView);
-        }
-    }
-
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width,
-                               int height) {
-
     }
 
     @Override
@@ -182,6 +219,12 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
             hasSurface = true;
             initCamera(holder);
         }
+
+    }
+
+    @Override
+    public void surfaceChanged(SurfaceHolder holder, int format, int width,
+                               int height) {
 
     }
 
@@ -210,66 +253,20 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
 
     }
 
-    private void initBeepSound() {
-        if (playBeep && mediaPlayer == null) {
-            // The volume on STREAM_SYSTEM is not adjustable, and users found it
-            // too loud,
-            // so we now play on the music stream.
-            getActivity().setVolumeControlStream(AudioManager.STREAM_MUSIC);
-            mediaPlayer = new MediaPlayer();
-            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-            mediaPlayer.setOnCompletionListener(beepListener);
-
-            AssetFileDescriptor file = getResources().openRawResourceFd(
-                    R.raw.beep);
-            try {
-                mediaPlayer.setDataSource(file.getFileDescriptor(),
-                        file.getStartOffset(), file.getLength());
-                file.close();
-                mediaPlayer.setVolume(BEEP_VOLUME, BEEP_VOLUME);
-                mediaPlayer.prepare();
-            } catch (IOException e) {
-                mediaPlayer = null;
-            }
-        }
-    }
-
-    private static final long VIBRATE_DURATION = 200L;
-
-    private void playBeepSoundAndVibrate() {
-        if (playBeep && mediaPlayer != null) {
-            mediaPlayer.start();
-        }
-        if (vibrate) {
-            Vibrator vibrator = (Vibrator) getActivity().getSystemService(getActivity().VIBRATOR_SERVICE);
-            vibrator.vibrate(VIBRATE_DURATION);
-        }
-    }
-
-    /**
-     * When the beep has finished playing, rewind to queue up another one.
-     */
-    private final MediaPlayer.OnCompletionListener beepListener = new MediaPlayer.OnCompletionListener() {
-        public void onCompletion(MediaPlayer mediaPlayer) {
-            mediaPlayer.seekTo(0);
-        }
-    };
-
     public CodeUtils.AnalyzeCallback getAnalyzeCallback() {
         return analyzeCallback;
-    }
-
-    /**移除回调对象**/
-    public void removeAnalyzeCallback(){
-        analyzeCallback = null;
     }
 
     public void setAnalyzeCallback(CodeUtils.AnalyzeCallback analyzeCallback) {
         this.analyzeCallback = analyzeCallback;
     }
 
-    @Nullable
-    CameraInitCallBack callBack;
+    /**
+     * 移除回调对象
+     **/
+    public void removeAnalyzeCallback() {
+        analyzeCallback = null;
+    }
 
     /**
      * Set callback for Camera check whether Camera init success or not.
@@ -281,6 +278,7 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
     interface CameraInitCallBack {
         /**
          * Callback for Camera init result.
+         *
          * @param e If is's null,means success.otherwise Camera init failed with the Exception.
          */
         void callBack(Exception e);
