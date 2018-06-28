@@ -2,8 +2,7 @@
     package="com.uuzuche.lib_zxing">
 
     <application
-        android:allowBackup="true"
-        >
+        android:allowBackup="true">
 
         <activity
             android:configChanges="orientation|keyboardHidden"

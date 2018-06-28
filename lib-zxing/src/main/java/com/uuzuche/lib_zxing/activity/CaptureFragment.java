@@ -1,5 +1,6 @@
 package com.uuzuche.lib_zxing.activity;
 
+import android.app.Fragment;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.Bitmap;
 import android.hardware.Camera;
@@ -9,7 +10,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Vibrator;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
@@ -112,6 +112,16 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
             handler = null;
         }
         CameraManager.get().closeDriver();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        analyzeCallback = null;
+        if (mediaPlayer != null){
+            mediaPlayer.setOnCompletionListener(null);
+        }
+
     }
 
     @Override
@@ -247,6 +257,10 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
 
     public CodeUtils.AnalyzeCallback getAnalyzeCallback() {
         return analyzeCallback;
+    }
+
+    public void removeAnalyzeCallback(){
+        analyzeCallback = null;
     }
 
     public void setAnalyzeCallback(CodeUtils.AnalyzeCallback analyzeCallback) {
