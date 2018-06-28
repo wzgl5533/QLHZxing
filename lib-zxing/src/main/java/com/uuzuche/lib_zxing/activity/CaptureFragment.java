@@ -259,6 +259,7 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
         return analyzeCallback;
     }
 
+    /**移除回调对象**/
     public void removeAnalyzeCallback(){
         analyzeCallback = null;
     }
