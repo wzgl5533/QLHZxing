@@ -126,18 +126,13 @@ public class CaptureFragment extends Fragment implements SurfaceHolder.Callback 
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        if (mediaPlayer != null) {
-            mediaPlayer.setOnCompletionListener(null);
-        }
-
-    }
-
-    @Override
     public void onDestroy() {
         super.onDestroy();
         inactivityTimer.shutdown();
+        if (mediaPlayer != null){
+            mediaPlayer.release();
+            mediaPlayer = null;
+        }
     }
 
     private void initCamera(SurfaceHolder surfaceHolder) {

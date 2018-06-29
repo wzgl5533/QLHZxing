@@ -33,7 +33,7 @@ public final class InactivityTimer {
 
     private final ScheduledExecutorService inactivityTimer =
             Executors.newSingleThreadScheduledExecutor(new DaemonThreadFactory());
-    private final Activity activity;
+    private  Activity activity;
     private ScheduledFuture<?> inactivityFuture = null;
 
     public InactivityTimer(Activity activity) {
@@ -58,6 +58,7 @@ public final class InactivityTimer {
     public void shutdown() {
         cancel();
         inactivityTimer.shutdown();
+        activity = null;
     }
 
     private static final class DaemonThreadFactory implements ThreadFactory {
