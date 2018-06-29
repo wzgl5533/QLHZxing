@@ -2,9 +2,9 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 25
-    buildToolsVersion '27.0.3'
+    buildToolsVersion '25.0.2'
     defaultConfig {
-        minSdkVersion 14
+        minSdkVersion 16
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
@@ -28,4 +28,5 @@ dependencies {
     compile 'pub.devrel:easypermissions:0.2.0'
     testCompile 'junit:junit:4.12'
     compile project(':lib-zxing')
+    compile 'com.github.Dkaishu:EasyDatePicker:v1.0.1'
 }
