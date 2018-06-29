@@ -48,6 +48,7 @@ public class MainActivity extends BaseActivity implements EasyPermissions.Permis
         initView();
         //初始化权限
         initPermission();
+
     }
 
     /**
